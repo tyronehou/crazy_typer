@@ -6,6 +6,7 @@ from selenium.webdriver.support.ui import WebDriverWait # available since 2.4.0
 from selenium.webdriver.support import expected_conditions as EC # available since 2.26.0
 from selenium.webdriver.common.by import By
 import time
+import sys
 
 # TODO: Add a random typer (exponential distributed interarrival times)
 
@@ -19,7 +20,7 @@ def interval(wpm):
 
 class typer:
 
-    def __init__(self, browser, speed = 60):
+    def __init__(self, browser, max_speed=True):
         # Create a new instance of the specified driver
         if browser == 'HTML':
             self.driver = webdriver.Remote(desired_capabilities=webdriver.
@@ -28,6 +29,8 @@ class typer:
             self.driver = webdriver.Firefox()
         else:
             raise DriverNotFoundException
+
+        self.max_speed = max_speed
 
     def run(self):
         self.driver.get("http://10fastfingers.com/typing-test/english")
@@ -39,27 +42,25 @@ class typer:
             inputElement = wait.until(EC.presence_of_element_located((By.ID, "inputfield")))
             word_list = self.driver.execute_script("return document.getElementById('wordlist').innerHTML")
 
-            # maximum speed (all input at once)
-            words = word_list.replace('|', ' ') + ' '
-            inputElement.send_keys(words)
-
-            # input word by word
-            #words = word_list.split('|')
-            #for word in words:
-            #     inputElement.send_keys(word + " ")
-
+            # Format the outputted list
             words = word_list.replace('|', ' ') + ' '
 
             print(words)
             print('#:', len(words.split()))
-
             input('Press enter')
-            inputElement.send_keys(words)
             
+            if self.max_speed:
+                inputElement.send_keys(words)
+            else:
+                words = words.split()
+                for word in words:
+                    inputElement.send_keys(word + " ")
 
+            input('Press enter to quit')
         finally:
-            driver.quit()
+            self.driver.quit()
 
 
 if __name__ == '__main__':
-    typer('Firefox').run()
+    max_speed = False
+    typer('Firefox', max_speed).run()
